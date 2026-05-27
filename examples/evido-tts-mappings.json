@@ -1,0 +1,46 @@
+{
+  "mappings": [
+    {
+      "language_code": "de-DE",
+      "provider_key": "supertonic",
+      "priority": 1,
+      "enabled": true,
+      "config": {
+        "endpoint": "http://supertonic-tts:7788/v1/tts",
+        "supertonic_parameters": {
+          "voice": "M1",
+          "lang": "de",
+          "response_format": "wav"
+        }
+      }
+    },
+    {
+      "language_code": "en-US",
+      "provider_key": "supertonic",
+      "priority": 1,
+      "enabled": true,
+      "config": {
+        "endpoint": "http://supertonic-tts:7788/v1/tts",
+        "supertonic_parameters": {
+          "voice": "M1",
+          "lang": "en",
+          "response_format": "wav"
+        }
+      }
+    },
+    {
+      "language_code": "fr-FR",
+      "provider_key": "supertonic",
+      "priority": 1,
+      "enabled": true,
+      "config": {
+        "endpoint": "http://supertonic-tts:7788/v1/tts",
+        "supertonic_parameters": {
+          "voice": "M1",
+          "lang": "fr",
+          "response_format": "wav"
+        }
+      }
+    }
+  ]
+}
