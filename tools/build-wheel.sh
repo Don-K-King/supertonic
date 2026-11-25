@@ -8,7 +8,10 @@
 # The build tools (setuptools, wheel) come from --build-wheels with --no-index, at exactly the
 # versions and hashes of --build-lock: the setuptools version is written INTO the wheel
 # (dist-info/WHEEL "Generator:"), so "whatever the folder holds" would change the sha256.
-# SOURCE_DATE_EPOCH is the commit time and the umask 022, so two builds give the same bytes.
+# SOURCE_DATE_EPOCH (the time stamp of every wheel member) is the time of the last commit, up to
+# --commit, that touched an input of the wheel (WHEEL_INPUTS) - not the time of --commit itself: an
+# empty commit or one that only touches tests or tools gave the same version 1.3.1+evido.1 another
+# sha256 (measured d887bd1 vs 0e0c9e1, same tree). With umask 022, equal inputs give equal bytes.
 # Prints one line: <wheel path> <size> <sha256>.
 set -euo pipefail
 
@@ -54,7 +57,14 @@ trap 'rm -rf "${work:?}"' EXIT
 mkdir "${work}/src" "${work}/dist" "${work}/uv-cache"
 git -C "${REPO}" archive "${commit}" | tar -x -C "${work}/src"
 
-SOURCE_DATE_EPOCH="$(git -C "${REPO}" show -s --format=%ct "${commit}")"
+# What setuptools puts into the wheel: the package (with its package data), the metadata sources
+# (pyproject.toml, README.md as the long description, MANIFEST.in, a setup.py/setup.cfg should one
+# appear) and the licence files its default license-files patterns pick up (LICENSE, NOTICE.md).
+WHEEL_INPUTS=(supertonic pyproject.toml setup.py setup.cfg MANIFEST.in README.md
+    'LICEN[CS]E*' 'COP[YI]ING*' 'NOTICE*' 'AUTHORS*')
+SOURCE_DATE_EPOCH="$(git -C "${REPO}" log -1 --format=%ct "${commit}" -- "${WHEEL_INPUTS[@]}")"
+[[ "${SOURCE_DATE_EPOCH}" =~ ^[0-9]+$ ]] \
+    || { echo "ERROR: no commit up to ${commit} touches the wheel inputs" >&2; exit 1; }
 export SOURCE_DATE_EPOCH PYTHONDONTWRITEBYTECODE=1
 UV_CACHE_DIR="${work}/uv-cache" uv build --quiet --wheel --no-python-downloads \
     --python "${PYTHON:-python3.12}" \
