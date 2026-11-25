@@ -213,17 +213,13 @@ def cmd_info(args):
 
 
 def cmd_download(args):
-    """Download model from HuggingFace."""
-    from .loader import download_model, get_cache_dir
-
-    print("📥 Downloading Supertonic model...")
+    """Refuse: this build never downloads a model."""
+    from .loader import DownloadDisabledError, download_model, get_cache_dir
 
     try:
-        cache_dir = get_cache_dir()
-        download_model(cache_dir)
-        print(f"✅ Model downloaded to: {cache_dir}")
-    except Exception as e:
-        print(f"❌ Download failed: {e}")
+        download_model(get_cache_dir())
+    except DownloadDisabledError as e:
+        print(f"❌ {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -264,7 +260,6 @@ def cmd_serve(args):
     app = create_app(model=args.model, cors_origins=cors_origins)
 
     print(f"supertonic serve listening on http://{args.host}:{args.port}")
-    print(f"  docs:  http://{args.host}:{args.port}/docs")
     print(f"  model: {args.model}")
 
     uvicorn.run(
@@ -479,7 +474,7 @@ Examples:
 
     # Download command
     parser_download = subparsers.add_parser(
-        "download", aliases=["d"], help="Download model from HuggingFace"
+        "download", aliases=["d"], help="Refuse: this build never downloads a model"
     )
     parser_download.set_defaults(func=cmd_download)
 

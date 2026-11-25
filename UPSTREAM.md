@@ -27,3 +27,5 @@ enforces both directions).
   `huggingface_hub.snapshot_download`; the import and the download error texts are gone. The
   `auto_download` docstrings in `pipeline.py` (unchanged) describe upstream: here a missing model
   raises that error.
+- `supertonic/cli.py` - the `download` command prints the refusal of `download_model` and exits
+  with code 1; `serve` no longer prints a `/docs` address.

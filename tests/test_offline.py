@@ -98,3 +98,37 @@ def test_load_and_synthesis_without_network(no_network):
     )
     assert np.asarray(wav).size > 0
     assert float(np.asarray(duration).reshape(-1)[0]) > 0.5
+
+
+def test_cli_download_refuses_and_exits_nonzero(capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        _run_cli(["download"])
+    assert exc_info.value.code == 1
+    assert "never downloads" in capsys.readouterr().err
+
+
+def test_cli_serve_does_not_advertise_docs(monkeypatch, capsys):
+    pytest.importorskip("fastapi")
+    import uvicorn
+
+    from supertonic.cli import cmd_serve, create_parser
+
+    monkeypatch.setattr(uvicorn, "run", lambda app, **kwargs: None)
+    monkeypatch.setattr("supertonic.server.create_app", lambda **kwargs: object())
+    cmd_serve(create_parser().parse_args(["serve"]))
+    out = capsys.readouterr().out
+    assert "listening on" in out
+    assert "/docs" not in out
+
+
+def _run_cli(argv):
+    import sys
+
+    from supertonic.cli import main
+
+    saved = sys.argv
+    sys.argv = ["supertonic", *argv]
+    try:
+        main()
+    finally:
+        sys.argv = saved
