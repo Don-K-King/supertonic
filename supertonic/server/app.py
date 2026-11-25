@@ -203,6 +203,9 @@ def create_app(
         ),
         version=__version__,
         lifespan=lifespan,
+        # Swagger UI and ReDoc load their pages from a CDN; /openapi.json stays.
+        docs_url=None,
+        redoc_url=None,
     )
     app.state.server_state = state
 

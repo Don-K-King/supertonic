@@ -29,3 +29,5 @@ enforces both directions).
   raises that error.
 - `supertonic/cli.py` - the `download` command prints the refusal of `download_model` and exits
   with code 1; `serve` no longer prints a `/docs` address.
+- `supertonic/server/app.py` - `FastAPI(docs_url=None, redoc_url=None)`: no Swagger UI or ReDoc
+  page (both load from a CDN); `/openapi.json` stays.

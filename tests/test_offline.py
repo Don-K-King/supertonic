@@ -132,3 +132,15 @@ def _run_cli(argv):
         main()
     finally:
         sys.argv = saved
+
+
+def test_app_has_no_cdn_documentation_pages():
+    pytest.importorskip("fastapi")
+    from supertonic.server import create_app
+
+    app = create_app(model="supertonic-3")
+    paths = {getattr(route, "path", None) for route in app.router.routes}
+    assert not paths & {"/docs", "/docs/oauth2-redirect", "/redoc"}, paths
+    schema_paths = app.openapi()["paths"]
+    assert "/v1/audio/speech" in schema_paths
+    assert "/v1/health" in schema_paths
