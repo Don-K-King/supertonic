@@ -31,3 +31,5 @@ enforces both directions).
   with code 1; `serve` no longer prints a `/docs` address.
 - `supertonic/server/app.py` - `FastAPI(docs_url=None, redoc_url=None)`: no Swagger UI or ReDoc
   page (both load from a CDN); `/openapi.json` stays.
+- `pyproject.toml` - version `1.3.1+evido.N`; `huggingface-hub` is no dependency; project URLs
+  name this repository and the archived upstream.
