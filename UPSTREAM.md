@@ -23,3 +23,7 @@ site and media), `examples/` (they load the model from Hugging Face), `.github/w
 Every imported file not listed here is byte-identical to the import (`tests/test_upstream_parity.py`
 enforces both directions).
 
+- `supertonic/loader.py` - `download_model` raises `DownloadDisabledError` instead of calling
+  `huggingface_hub.snapshot_download`; the import and the download error texts are gone. The
+  `auto_download` docstrings in `pipeline.py` (unchanged) describe upstream: here a missing model
+  raises that error.

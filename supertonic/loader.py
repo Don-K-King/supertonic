@@ -1,14 +1,13 @@
 """Model loading and voice style management utilities.
 
-This module handles downloading, loading, and managing Supertonic TTS models
-and voice styles from HuggingFace Hub.
+This module handles loading and managing Supertonic TTS models and voice
+styles from a local model directory. It never downloads anything.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import shutil
 from pathlib import Path
 from typing import Optional, Union
 
@@ -20,7 +19,6 @@ from .config import (
     DEFAULT_INTER_OP_NUM_THREADS,
     DEFAULT_INTRA_OP_NUM_THREADS,
     DEFAULT_MODEL,
-    DEFAULT_MODEL_REPO,
     DEFAULT_ONNX_PROVIDERS,
     DP_ONNX_REL_PATH,
     TEXT_ENC_ONNX_REL_PATH,
@@ -29,8 +27,6 @@ from .config import (
     VOCODER_ONNX_REL_PATH,
     VOICE_STYLES_DIR,
     get_model_cache_dir,
-    get_model_repo,
-    get_model_revision,
 )
 from .core import Style, Supertonic, UnicodeProcessor
 from .utils import validate_voice_style_format
@@ -95,65 +91,24 @@ def has_all_onnx_modules(model_dir: Union[Path, str]) -> bool:
     return all_exist
 
 
+class DownloadDisabledError(RuntimeError):
+    """This build of supertonic never downloads; the model directory must already hold the files."""
+
+
 def download_model(model_dir: Union[Path, str], model_name: Optional[str] = None) -> None:
-    """Download Supertonic model from HuggingFace Hub.
+    """Refuse every download: this build of supertonic has no network path.
 
-    Args:
-        model_dir: Directory where the model should be downloaded (str or Path)
-        model_name: Model name (one of ``AVAILABLE_MODELS``).
-            If None, uses default model repository.
+    Kept under its upstream name and signature because ``load_model`` (``auto_download=True``)
+    and the ``download`` CLI command call it when a model file is missing; the model is
+    provisioned by whoever builds the deployment, never fetched at run time.
+
+    Raises:
+        DownloadDisabledError: always, naming the directory that lacks the files
     """
-    model_dir = Path(model_dir) if isinstance(model_dir, str) else model_dir
-
-    # Determine which repo and revision to download
-    effective_model = model_name or DEFAULT_MODEL
-    if model_name is not None:
-        repo_id = get_model_repo(model_name)
-    else:
-        repo_id = DEFAULT_MODEL_REPO
-    revision = get_model_revision(effective_model)
-
-    # Use temporary directory for atomic download
-    temp_dir = model_dir.parent / f".{model_dir.name}.tmp"
-
-    try:
-        from huggingface_hub import snapshot_download
-
-        logger.info(
-            f"Downloading model from {repo_id} @ {revision[:12]} to temporary location: {temp_dir}"
-        )
-        snapshot_download(repo_id=repo_id, local_dir=str(temp_dir), revision=revision)
-
-        # Move from temporary to final location on success
-        if model_dir.exists():
-            logger.info(f"Removing existing model directory: {model_dir}")
-            shutil.rmtree(model_dir)
-        shutil.move(str(temp_dir), str(model_dir))
-
-        logger.info("Model download completed successfully")
-
-    except ImportError as e:
-        logger.error("huggingface_hub not installed")
-        raise RuntimeError(
-            "Failed to import huggingface_hub. Please install it with: "
-            "pip install huggingface-hub"
-        ) from e
-    except Exception as e:
-        logger.error(f"Model download failed: {e}")
-
-        # Clean up temporary files on failure
-        if temp_dir.exists():
-            logger.info("Cleaning up temporary files...")
-            try:
-                shutil.rmtree(temp_dir)
-            except Exception as cleanup_error:
-                logger.warning(f"Failed to clean up temporary files: {cleanup_error}")
-
-        raise RuntimeError(
-            f"Failed to download model from {repo_id}. "
-            f"Please check your internet connection and try again. "
-            f"Error: {e}"
-        ) from e
+    raise DownloadDisabledError(
+        "this build never downloads; the model directory must hold the files: "
+        f"{model_dir} (model {model_name or DEFAULT_MODEL})"
+    )
 
 
 def load_configs(model_dir: Union[Path, str]) -> dict:
@@ -306,18 +261,19 @@ def load_model(
     """Load the complete Supertonic TTS model.
 
     This function loads all model components including ONNX modules,
-    configuration, and text processor. If model files are missing and
-    auto_download is enabled, it will download them from HuggingFace Hub.
+    configuration, and text processor. Missing model files are an error: with
+    auto_download enabled the refusal of ``download_model`` is raised.
 
     Args:
         model_dir: Directory containing (or to contain) the model files (str or Path)
-        auto_download: If True, automatically download missing model files
+        auto_download: If True, missing model files raise DownloadDisabledError;
+            if False, FileNotFoundError
         intra_op_num_threads: Number of threads for intra-op parallelism.
             None (default) lets ONNX Runtime auto-detect optimal value
         inter_op_num_threads: Number of threads for inter-op parallelism.
             None (default) lets ONNX Runtime auto-detect optimal value
         model_name: Model name (one of ``AVAILABLE_MODELS``).
-            Used for downloading the correct model if auto_download is True.
+            Named in the error when model files are missing.
 
     Returns:
         Initialized Supertonic TTS engine
@@ -330,8 +286,7 @@ def load_model(
             logger.error(f"ONNX models not found in {model_dir}")
             raise FileNotFoundError(
                 f"ONNX model files not found in {model_dir}. "
-                f"Set auto_download=True to automatically download from HuggingFace Hub, "
-                f"or manually download the model to this directory."
+                f"This build never downloads; place the model files in this directory."
             )
         download_model(model_dir, model_name)
 

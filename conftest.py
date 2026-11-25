@@ -3,8 +3,8 @@
 SUPERTONIC_TEST_MODEL names the model snapshot (default: the store folder of the sibling
 evido-v1.0 checkout). The session builds its own model directory of symlinks to the snapshot's
 files and points SUPERTONIC_CACHE_DIR / SUPERTONIC_CUSTOM_STYLES_DIR at it, so a test that
-creates files writes there and never into the store. Without a snapshot the package's download
-path is replaced by a refusal, and every test that fails on that refusal is reported as skipped
+creates files writes there and never into the store. Without a snapshot every test that fails on
+the package's download refusal (supertonic.loader.DownloadDisabledError) is reported as skipped
 with the reason - never as passed.
 """
 
@@ -37,10 +37,6 @@ SKIP_REASON = f"model snapshot not available - set {MODEL_ENV} to the supertonic
 _session_dir = None
 
 
-class ModelUnavailable(RuntimeError):
-    """The test session has no model snapshot; nothing is ever downloaded."""
-
-
 def model_source() -> Path:
     return Path(os.environ.get(MODEL_ENV) or DEFAULT_MODEL)
 
@@ -48,10 +44,6 @@ def model_source() -> Path:
 def model_available() -> bool:
     source = model_source()
     return all((source / name).is_file() for name in REQUIRED)
-
-
-def _refuse_download(*_args, **_kwargs):
-    raise ModelUnavailable(SKIP_REASON)
 
 
 def pytest_configure(config):
@@ -63,10 +55,6 @@ def pytest_configure(config):
             (_session_dir / sub).mkdir()
             for item in sorted((source / sub).iterdir()):
                 (_session_dir / sub / item.name).symlink_to(item.resolve())
-    else:
-        import supertonic.loader
-
-        supertonic.loader.download_model = _refuse_download
     os.environ["SUPERTONIC_CACHE_DIR"] = str(_session_dir)
     os.environ["SUPERTONIC_CUSTOM_STYLES_DIR"] = str(_session_dir / "custom_styles")
 
@@ -78,10 +66,15 @@ def pytest_report_header(config):
 
 def _caused_by_missing_model(exc) -> bool:
     # The CLI catches the refusal and exits 1, so the refusal can sit in the chain of a
-    # SystemExit rather than be the raised exception itself.
+    # SystemExit rather than be the raised exception itself. With a snapshot present the
+    # refusal is a real failure and stays one.
+    if model_available():
+        return False
+    from supertonic.loader import DownloadDisabledError
+
     seen = set()
     while exc is not None and id(exc) not in seen:
-        if isinstance(exc, ModelUnavailable):
+        if isinstance(exc, DownloadDisabledError):
             return True
         seen.add(id(exc))
         exc = exc.__cause__ or exc.__context__
