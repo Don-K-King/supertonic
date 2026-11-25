@@ -24,3 +24,9 @@ def test_runtime_and_serve_dependencies_carry_no_network_client():
 
 def test_version_is_the_evido_build_of_upstream_1_3_1():
     assert re.fullmatch(r"1\.3\.1\+evido\.[1-9][0-9]*", _project()["version"])
+
+
+def test_package_reports_the_pyproject_version():
+    import supertonic
+
+    assert supertonic.__version__ == _project()["version"]

@@ -48,7 +48,7 @@ from .config import (
 from .core import Style, UnicodeProcessor
 from .pipeline import TTS
 
-__version__ = "1.3.1"
+__version__ = "1.3.1+evido.1"
 
 __all__ = [
     "TTS",

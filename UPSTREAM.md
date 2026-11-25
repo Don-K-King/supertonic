@@ -33,3 +33,5 @@ enforces both directions).
   page (both load from a CDN); `/openapi.json` stays.
 - `pyproject.toml` - version `1.3.1+evido.N`; `huggingface-hub` is no dependency; project URLs
   name this repository and the archived upstream.
+- `supertonic/__init__.py` - `__version__` equals the version of `pyproject.toml`, so
+  `/v1/health` and `supertonic version` report this build.
