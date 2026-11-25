@@ -1,0 +1,7 @@
+/weights/supertonic-3/
+/dist/
+/build/
+/.venv/
+/docs/
+*.egg-info/
+__pycache__/

@@ -1,0 +1,5 @@
+# Test tools only - never installed into the image. tools/check.sh installs them,
+# together with the runtime dependencies of pyproject.toml, from the evido
+# artefact store with --no-index.
+pytest
+httpx2
